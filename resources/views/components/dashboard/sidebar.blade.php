@@ -16,9 +16,10 @@
                 <div class="sidebar-group__items" role="group" aria-label="{{ $group['group'] }}">
                     @foreach($group['items'] as $item)
                         @php
-                            $href = str_starts_with($item['route'], '#') ? $item['route'] : route($item['route']);
-                            $isActive = $item['route'] === 'dashboard' && request()->routeIs('dashboard');
                             $isPlaceholder = str_starts_with($item['route'], '#');
+                            $href = $isPlaceholder ? $item['route'] : route($item['route']);
+                            $routePrefix = str_replace('.index', '.*', $item['route']);
+                            $isActive = !$isPlaceholder && request()->routeIs($item['route'], $routePrefix);
                         @endphp
                         <a href="{{ $href }}"
                            class="sidebar-nav__link @if($isActive) sidebar-nav__link--active @endif @if($isPlaceholder) sidebar-nav__link--placeholder @endif"

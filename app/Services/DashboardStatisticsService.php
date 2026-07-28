@@ -325,7 +325,7 @@ class DashboardStatisticsService
         $admin = $this->isAdmin($user);
 
         return Payment::query()
-            ->with(['account:id,account_number,customer_id,zone_id', 'account.customer:id,first_name,last_name,business_name,customer_type'])
+            ->with(['account:id,ip_number,customer_id,zone_id', 'account.customer:id,first_name,last_name,business_name,customer_type'])
             ->when(!$admin || count($zones) > 0, fn ($q) => $q->whereHas('account', fn ($sq) => $sq->whereIn('zone_id', $zones)))
             ->orderByDesc('payment_date')
             ->limit($limit)
@@ -388,8 +388,8 @@ class DashboardStatisticsService
                 ['label' => 'Financial', 'route' => '#reports/financial', 'permission' => 'ledger.view', 'icon' => 'trending-up'],
             ]],
             ['group' => 'Administration', 'items' => [
-                ['label' => 'Staff', 'route' => '#staff', 'permission' => 'staff-users.view', 'icon' => 'shield'],
-                ['label' => 'Roles', 'route' => '#roles', 'permission' => 'roles.view', 'icon' => 'key'],
+                ['label' => 'Staff', 'route' => 'staff.index', 'permission' => 'staff-users.view', 'icon' => 'shield'],
+                ['label' => 'Roles', 'route' => 'roles.index', 'permission' => 'roles.view', 'icon' => 'key'],
                 ['label' => 'Zones', 'route' => '#zones', 'permission' => 'zones.view', 'icon' => 'map-pin'],
                 ['label' => 'Billing Settings', 'route' => '#billing-settings', 'permission' => 'billing-settings.manage', 'icon' => 'settings'],
                 ['label' => 'Audit Logs', 'route' => '#audit-logs', 'permission' => 'audit-logs.view', 'icon' => 'scroll'],

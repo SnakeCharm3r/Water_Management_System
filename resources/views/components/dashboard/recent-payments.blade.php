@@ -29,7 +29,7 @@
                                 <a href="#payments/{{ $payment->id }}">{{ $payment->receipt_number ?? '-' }}</a>
                             </td>
                             <td>{{ $payment->account?->customer?->display_name ?? '-' }}</td>
-                            <td>{{ $payment->account?->account_number ?? '-' }}</td>
+                            <td>{{ $payment->account?->ip_number ?? '-' }}</td>
                             <td>{{ ucfirst(str_replace('_', ' ', $payment->payment_channel ?? '-')) }}</td>
                             <td class="text-right">{{ number_format($payment->amount) }}</td>
                             <td>

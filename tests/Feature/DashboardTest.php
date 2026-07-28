@@ -115,11 +115,11 @@ class DashboardTest extends TestCase
 
         $categ = TariffCategory::create(['name' => 'Domestic', 'code' => 'DOM', 'is_active' => true]);
 
-        $custA = Customer::create(['first_name' => 'John', 'last_name' => 'Doe', 'customer_type' => 'individual', 'status' => 'active']);
-        WaterAccount::create(['customer_id' => $custA->id, 'zone_id' => $zoneA->id, 'tariff_category_id' => $categ->id, 'account_number' => 'WA-001', 'status' => 'active']);
+        $custA = Customer::create(['customer_number' => 'T-001', 'first_name' => 'John', 'last_name' => 'Doe', 'customer_type' => 'individual', 'phone' => '0711111111', 'status' => 'active']);
+        WaterAccount::create(['customer_id' => $custA->id, 'zone_id' => $zoneA->id, 'tariff_category_id' => $categ->id, 'ip_number' => 'IP-T-001', 'account_name' => 'John Doe', 'service_address' => 'Test address A', 'status' => 'active']);
 
-        $custB = Customer::create(['first_name' => 'Jane', 'last_name' => 'Smith', 'customer_type' => 'individual', 'status' => 'active']);
-        WaterAccount::create(['customer_id' => $custB->id, 'zone_id' => $zoneB->id, 'tariff_category_id' => $categ->id, 'account_number' => 'WA-002', 'status' => 'active']);
+        $custB = Customer::create(['customer_number' => 'T-002', 'first_name' => 'Jane', 'last_name' => 'Smith', 'customer_type' => 'individual', 'phone' => '0722222222', 'status' => 'active']);
+        WaterAccount::create(['customer_id' => $custB->id, 'zone_id' => $zoneB->id, 'tariff_category_id' => $categ->id, 'ip_number' => 'IP-T-002', 'account_name' => 'Jane Smith', 'service_address' => 'Test address B', 'status' => 'active']);
 
         $zoneUser = $this->makeZoneUser($zoneA);
 
@@ -137,9 +137,9 @@ class DashboardTest extends TestCase
 
         $categ = TariffCategory::create(['name' => 'Domestic', 'code' => 'DOM', 'is_active' => true]);
 
-        Customer::create(['first_name' => 'John', 'last_name' => 'Doe', 'customer_type' => 'individual', 'status' => 'active']);
-        WaterAccount::create(['customer_id' => 1, 'zone_id' => $zoneA->id, 'tariff_category_id' => $categ->id, 'account_number' => 'WA-001', 'status' => 'active']);
-        WaterAccount::create(['customer_id' => 1, 'zone_id' => $zoneB->id, 'tariff_category_id' => $categ->id, 'account_number' => 'WA-002', 'status' => 'active']);
+        $cust = Customer::create(['customer_number' => 'T-010', 'first_name' => 'John', 'last_name' => 'Doe', 'customer_type' => 'individual', 'phone' => '0711111111', 'status' => 'active']);
+        WaterAccount::create(['customer_id' => $cust->id, 'zone_id' => $zoneA->id, 'tariff_category_id' => $categ->id, 'ip_number' => 'IP-T-010', 'account_name' => 'John Doe', 'service_address' => 'Test A', 'status' => 'active']);
+        WaterAccount::create(['customer_id' => $cust->id, 'zone_id' => $zoneB->id, 'tariff_category_id' => $categ->id, 'ip_number' => 'IP-T-011', 'account_name' => 'John Doe', 'service_address' => 'Test B', 'status' => 'active']);
 
         $response = $this->actingAs($admin)->get(route('dashboard'));
         $response->assertOk();
@@ -154,8 +154,8 @@ class DashboardTest extends TestCase
         $admin = $this->makeAdmin();
         $categ = TariffCategory::create(['name' => 'Domestic', 'code' => 'DOM', 'is_active' => true]);
 
-        $cust = Customer::create(['first_name' => 'Test', 'last_name' => 'User', 'customer_type' => 'individual', 'status' => 'active']);
-        $acct = WaterAccount::create(['customer_id' => $cust->id, 'zone_id' => $zone->id, 'tariff_category_id' => $categ->id, 'account_number' => 'WA-100', 'status' => 'active']);
+        $cust = Customer::create(['customer_number' => 'T-020', 'first_name' => 'Test', 'last_name' => 'User', 'customer_type' => 'individual', 'phone' => '0733333333', 'status' => 'active']);
+        $acct = WaterAccount::create(['customer_id' => $cust->id, 'zone_id' => $zone->id, 'tariff_category_id' => $categ->id, 'ip_number' => 'IP-T-020', 'account_name' => 'Test User', 'service_address' => 'Test address', 'status' => 'active']);
 
         $response = $this->actingAs($admin)->get(route('dashboard'));
         $response->assertOk();
@@ -170,13 +170,13 @@ class DashboardTest extends TestCase
         $admin = $this->makeAdmin();
         $categ = TariffCategory::create(['name' => 'Domestic', 'code' => 'DOM', 'is_active' => true]);
 
-        $cust = Customer::create(['first_name' => 'Test', 'last_name' => 'User', 'customer_type' => 'individual', 'status' => 'active']);
-        $acct = WaterAccount::create(['customer_id' => $cust->id, 'zone_id' => $zone->id, 'tariff_category_id' => $categ->id, 'account_number' => 'WA-100', 'status' => 'active']);
+        $cust = Customer::create(['customer_number' => 'T-030', 'first_name' => 'Test', 'last_name' => 'User', 'customer_type' => 'individual', 'phone' => '0744444444', 'status' => 'active']);
+        $acct = WaterAccount::create(['customer_id' => $cust->id, 'zone_id' => $zone->id, 'tariff_category_id' => $categ->id, 'ip_number' => 'IP-T-030', 'account_name' => 'Test User', 'service_address' => 'Test address', 'status' => 'active']);
 
-        $cycle = BillingCycle::create(['name' => 'Jul 2026', 'period_start' => '2026-07-01', 'period_end' => '2026-07-31', 'status' => 'open']);
+        $cycle = BillingCycle::create(['cycle_code' => 'CYC-2026-07', 'name' => 'Jul 2026', 'period_start' => '2026-07-01', 'period_end' => '2026-07-31', 'issue_date' => '2026-08-01', 'due_date' => '2026-08-08', 'status' => 'open']);
 
-        Bill::create(['water_account_id' => $acct->id, 'billing_cycle_id' => $cycle->id, 'bill_number' => 'B-001', 'status' => 'issued', 'total_amount' => 50000, 'balance_due' => 50000, 'period_start' => '2026-07-01', 'period_end' => '2026-07-31', 'due_date' => '2026-08-15']);
-        Bill::create(['water_account_id' => $acct->id, 'billing_cycle_id' => $cycle->id, 'bill_number' => 'B-002', 'status' => 'voided', 'total_amount' => 30000, 'balance_due' => 30000, 'period_start' => '2026-07-01', 'period_end' => '2026-07-31', 'due_date' => '2026-08-15']);
+        Bill::create(['water_account_id' => $acct->id, 'billing_cycle_id' => $cycle->id, 'invoice_number' => 'INV-T-001', 'bill_number' => 'B-001', 'account_number_snapshot' => $acct->ip_number, 'customer_name_snapshot' => 'Test User', 'property_snapshot' => 'Test address', 'tariff_category_snapshot' => 'Domestic', 'status' => 'issued', 'total_amount' => 50000, 'balance_due' => 50000, 'period_start' => '2026-07-01', 'period_end' => '2026-07-31', 'due_date' => '2026-08-15']);
+        Bill::create(['water_account_id' => $acct->id, 'billing_cycle_id' => $cycle->id, 'invoice_number' => 'INV-T-002', 'bill_number' => 'B-002', 'account_number_snapshot' => $acct->ip_number, 'customer_name_snapshot' => 'Test User', 'property_snapshot' => 'Test address', 'tariff_category_snapshot' => 'Domestic', 'status' => 'voided', 'total_amount' => 30000, 'balance_due' => 30000, 'period_start' => '2026-07-01', 'period_end' => '2026-07-31', 'due_date' => '2026-08-15', 'revision_number' => 2]);
 
         $response = $this->actingAs($admin)->get(route('dashboard'));
         $response->assertOk();
