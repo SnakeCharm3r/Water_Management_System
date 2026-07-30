@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 
 final class DashboardFilters
@@ -39,7 +38,7 @@ final class DashboardFilters
 
     public function cacheKey(string $prefix, array $zoneIds): string
     {
-        return $prefix . ':' . md5(json_encode([
+        return $prefix.':'.md5(json_encode([
             'z' => $zoneIds,
             'bc' => $this->billingCycleId,
             'df' => $this->dateFrom,

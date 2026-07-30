@@ -26,15 +26,15 @@ class RoleController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name'          => 'required|string|max:100|unique:roles,name',
-            'permissions'   => 'required|array|min:1',
+            'name' => 'required|string|max:100|unique:roles,name',
+            'permissions' => 'required|array|min:1',
             'permissions.*' => 'exists:permissions,name',
         ]);
 
         $role = Role::create(['name' => $validated['name'], 'guard_name' => 'web']);
         $role->syncPermissions($validated['permissions']);
 
-        return redirect()->route('roles.index')->with('success', "Role '{$role->name}' created with " . count($validated['permissions']) . " permissions.");
+        return redirect()->route('roles.index')->with('success', "Role '{$role->name}' created with ".count($validated['permissions']).' permissions.');
     }
 
     public function edit(Role $role)
@@ -49,8 +49,8 @@ class RoleController extends Controller
     public function update(Request $request, Role $role)
     {
         $validated = $request->validate([
-            'name'          => 'required|string|max:100|unique:roles,name,' . $role->id,
-            'permissions'   => 'required|array|min:1',
+            'name' => 'required|string|max:100|unique:roles,name,'.$role->id,
+            'permissions' => 'required|array|min:1',
             'permissions.*' => 'exists:permissions,name',
         ]);
 

@@ -15,6 +15,7 @@ class Customer extends Model
     use HasFactory, SoftDeletes, UsesPublicUuid;
 
     protected $guarded = [];
+
     protected $appends = ['display_name'];
 
     protected function casts(): array
@@ -22,7 +23,10 @@ class Customer extends Model
         return ['customer_type' => CustomerType::class, 'status' => CustomerStatus::class, 'source_updated_at' => 'datetime', 'synced_at' => 'datetime'];
     }
 
-    public function waterAccounts(): HasMany { return $this->hasMany(WaterAccount::class); }
+    public function waterAccounts(): HasMany
+    {
+        return $this->hasMany(WaterAccount::class);
+    }
 
     public function getDisplayNameAttribute(): string
     {

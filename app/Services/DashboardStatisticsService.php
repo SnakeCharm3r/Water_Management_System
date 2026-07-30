@@ -5,10 +5,10 @@ namespace App\Services;
 use App\Models\Bill;
 use App\Models\BillingCycle;
 use App\Models\Customer;
+use App\Models\Meter;
 use App\Models\MeterInstallation;
 use App\Models\MeterReading;
 use App\Models\Payment;
-use App\Models\PaymentAllocation;
 use App\Models\User;
 use App\Models\WaterAccount;
 use Carbon\CarbonImmutable;
@@ -37,19 +37,20 @@ class DashboardStatisticsService
         return $accessible;
     }
 
-    private function isAdmin(User $user): bool
+    private function hasAuthorityWideAccess(User $user): bool
     {
-        return $user->hasAnyRole(['super-admin', 'system-admin']);
+        return $this->zoneAccess->hasAuthorityWideAccess($user);
     }
 
-    private function scopeByZones($query, array $zoneIds, string $col = 'zone_id', bool $isAdmin = false)
+    private function scopeByZones($query, array $zoneIds, string $col = 'zone_id', bool $allZones = false)
     {
-        if ($isAdmin && count($zoneIds) === 0) {
+        if ($allZones && count($zoneIds) === 0) {
             return $query;
         }
-        if (!$isAdmin || count($zoneIds) > 0) {
+        if (! $allZones || count($zoneIds) > 0) {
             $query->whereIn($col, $zoneIds);
         }
+
         return $query;
     }
 
@@ -63,29 +64,29 @@ class DashboardStatisticsService
     public function summaryCards(User $user, DashboardFilters $filters): array
     {
         $zones = $this->effectiveZoneIds($user, $filters);
-        $admin = $this->isAdmin($user);
+        $admin = $this->hasAuthorityWideAccess($user);
         $key = $filters->cacheKey('dash:summary', $zones);
 
         return $this->cached($key, function () use ($zones, $admin, $filters) {
             $accountQuery = fn () => WaterAccount::query()
-                ->when(!$admin || count($zones) > 0, fn ($q) => $q->whereIn('zone_id', $zones))
+                ->when(! $admin || count($zones) > 0, fn ($q) => $q->whereIn('zone_id', $zones))
                 ->when($filters->tariffCategoryId, fn ($q, $v) => $q->where('tariff_category_id', $v));
 
             $activeCustomers = Customer::query()
                 ->where('status', 'active')
-                ->when(!$admin || count($zones) > 0, fn ($q) => $q->whereHas('waterAccounts', fn ($sq) => $sq->whereIn('zone_id', $zones)))
+                ->when(! $admin || count($zones) > 0, fn ($q) => $q->whereHas('waterAccounts', fn ($sq) => $sq->whereIn('zone_id', $zones)))
                 ->count();
 
             $activeAccounts = $accountQuery()->where('status', 'active')->count();
             $installedMeters = MeterInstallation::query()
                 ->where('is_active', true)
-                ->when(!$admin || count($zones) > 0, fn ($q) => $q->whereHas('waterAccount', fn ($sq) => $sq->whereIn('zone_id', $zones)))
+                ->when(! $admin || count($zones) > 0, fn ($q) => $q->whereHas('waterAccount', fn ($sq) => $sq->whereIn('zone_id', $zones)))
                 ->when($filters->tariffCategoryId, fn ($q, $v) => $q->whereHas('waterAccount', fn ($sq) => $sq->where('tariff_category_id', $v)))
                 ->count();
 
             $receivables = Bill::query()
                 ->whereIn('status', ['issued', 'partially_paid', 'overdue'])
-                ->when(!$admin || count($zones) > 0, fn ($q) => $q->whereHas('account', fn ($sq) => $sq->whereIn('zone_id', $zones)))
+                ->when(! $admin || count($zones) > 0, fn ($q) => $q->whereHas('account', fn ($sq) => $sq->whereIn('zone_id', $zones)))
                 ->when($filters->tariffCategoryId, fn ($q, $v) => $q->whereHas('account', fn ($sq) => $sq->where('tariff_category_id', $v)))
                 ->selectRaw('COUNT(*) as bill_count, COALESCE(SUM(balance_due), 0) as total_outstanding')
                 ->first();
@@ -94,7 +95,7 @@ class DashboardStatisticsService
             $prevCustomers = Customer::query()
                 ->where('status', 'active')
                 ->where('created_at', '<', now()->subDays(30))
-                ->when(!$admin || count($zones) > 0, fn ($q) => $q->whereHas('waterAccounts', fn ($sq) => $sq->whereIn('zone_id', $zones)))
+                ->when(! $admin || count($zones) > 0, fn ($q) => $q->whereHas('waterAccounts', fn ($sq) => $sq->whereIn('zone_id', $zones)))
                 ->count();
 
             $prevAccounts = $accountQuery()->where('status', 'active')->where('created_at', '<', now()->subDays(30))->count();
@@ -132,7 +133,7 @@ class DashboardStatisticsService
                     'value' => (float) ($receivables->total_outstanding ?? 0),
                     'prev' => 0,
                     'change' => null,
-                    'description' => number_format((int) ($receivables->bill_count ?? 0)) . ' open bills',
+                    'description' => number_format((int) ($receivables->bill_count ?? 0)).' open bills',
                     'icon' => 'banknotes',
                     'link' => '#bills',
                     'is_currency' => true,
@@ -146,6 +147,7 @@ class DashboardStatisticsService
         if ($prev === 0) {
             return null;
         }
+
         return round((($curr - $prev) / $prev) * 100, 1);
     }
 
@@ -154,62 +156,68 @@ class DashboardStatisticsService
     public function alerts(User $user, DashboardFilters $filters): array
     {
         $zones = $this->effectiveZoneIds($user, $filters);
-        $admin = $this->isAdmin($user);
+        $admin = $this->hasAuthorityWideAccess($user);
         $key = $filters->cacheKey('dash:alerts', $zones);
 
-        return $this->cached($key, function () use ($zones, $admin, $filters) {
+        return $this->cached($key, function () use ($zones, $admin) {
             $alerts = [];
 
             // Readings awaiting verification
             $pendingReadings = MeterReading::query()
                 ->where('reading_status', 'submitted')
-                ->when(!$admin || count($zones) > 0, fn ($q) => $q->whereHas('installation.waterAccount', fn ($sq) => $sq->whereIn('zone_id', $zones)))
+                ->when(! $admin || count($zones) > 0, fn ($q) => $q->whereHas('installation.waterAccount', fn ($sq) => $sq->whereIn('zone_id', $zones)))
                 ->count();
             if ($pendingReadings > 0) {
-                $alerts[] = ['label' => 'Readings awaiting verification', 'count' => $pendingReadings, 'severity' => 'amber', 'description' => $pendingReadings . ' submitted reading(s) need review', 'link' => '#readings?status=submitted'];
+                $alerts[] = ['label' => 'Readings awaiting verification', 'count' => $pendingReadings, 'severity' => 'amber', 'description' => $pendingReadings.' submitted reading(s) need review', 'link' => '#readings?status=submitted'];
             }
 
             // Overdue accounts (>30 days)
             $overdueAccounts = Bill::query()
                 ->whereIn('status', ['issued', 'partially_paid', 'overdue'])
                 ->where('due_date', '<', now()->subDays(30))
-                ->when(!$admin || count($zones) > 0, fn ($q) => $q->whereHas('account', fn ($sq) => $sq->whereIn('zone_id', $zones)))
+                ->when(! $admin || count($zones) > 0, fn ($q) => $q->whereHas('account', fn ($sq) => $sq->whereIn('zone_id', $zones)))
                 ->distinct('water_account_id')
                 ->count('water_account_id');
             if ($overdueAccounts > 0) {
-                $alerts[] = ['label' => 'Accounts overdue >30 days', 'count' => $overdueAccounts, 'severity' => 'red', 'description' => $overdueAccounts . ' account(s) with overdue receivables', 'link' => '#bills?overdue=30'];
+                $alerts[] = ['label' => 'Accounts overdue >30 days', 'count' => $overdueAccounts, 'severity' => 'red', 'description' => $overdueAccounts.' account(s) with overdue receivables', 'link' => '#bills?overdue=30'];
             }
 
-            // Faulty meters
-            $faultyMeters = DB::table('meters')->where('status', 'faulty')->count();
+            // Faulty meters (via active installations -> water accounts)
+            $faultyMeters = Meter::query()
+                ->where('status', 'faulty')
+                ->whereHas('installations', function ($q) use ($zones, $admin) {
+                    $q->where('is_active', true)
+                        ->when(! $admin || count($zones) > 0, fn ($sq) => $sq->whereHas('waterAccount', fn ($wq) => $wq->whereIn('zone_id', $zones)));
+                })
+                ->count();
             if ($faultyMeters > 0) {
-                $alerts[] = ['label' => 'Faulty meters', 'count' => $faultyMeters, 'severity' => 'red', 'description' => $faultyMeters . ' meter(s) reported faulty', 'link' => '#meters?status=faulty'];
+                $alerts[] = ['label' => 'Faulty meters', 'count' => $faultyMeters, 'severity' => 'red', 'description' => $faultyMeters.' meter(s) reported faulty', 'link' => '#meters?status=faulty'];
             }
 
             // Accounts without active meters
             $noMeter = WaterAccount::query()
                 ->where('status', 'active')
-                ->when(!$admin || count($zones) > 0, fn ($q) => $q->whereIn('zone_id', $zones))
+                ->when(! $admin || count($zones) > 0, fn ($q) => $q->whereIn('zone_id', $zones))
                 ->whereDoesntHave('installations', fn ($q) => $q->where('is_active', true))
                 ->count();
             if ($noMeter > 0) {
-                $alerts[] = ['label' => 'Accounts without meter', 'count' => $noMeter, 'severity' => 'amber', 'description' => $noMeter . ' active account(s) lack an installed meter', 'link' => '#water-accounts?no_meter=1'];
+                $alerts[] = ['label' => 'Accounts without meter', 'count' => $noMeter, 'severity' => 'amber', 'description' => $noMeter.' active account(s) lack an installed meter', 'link' => '#water-accounts?no_meter=1'];
             }
 
             // Unallocated confirmed payments
             $unallocated = Payment::query()
                 ->where('status', 'confirmed')
-                ->when(!$admin || count($zones) > 0, fn ($q) => $q->whereHas('account', fn ($sq) => $sq->whereIn('zone_id', $zones)))
+                ->when(! $admin || count($zones) > 0, fn ($q) => $q->whereHas('account', fn ($sq) => $sq->whereIn('zone_id', $zones)))
                 ->whereDoesntHave('allocations')
                 ->count();
             if ($unallocated > 0) {
-                $alerts[] = ['label' => 'Unallocated payments', 'count' => $unallocated, 'severity' => 'amber', 'description' => $unallocated . ' confirmed payment(s) not yet allocated', 'link' => '#payments?unallocated=1'];
+                $alerts[] = ['label' => 'Unallocated payments', 'count' => $unallocated, 'severity' => 'amber', 'description' => $unallocated.' confirmed payment(s) not yet allocated', 'link' => '#payments?unallocated=1'];
             }
 
             // Failed sync events
             $failedSync = DB::table('integration_outbox')->where('status', 'failed')->count();
             if ($failedSync > 0) {
-                $alerts[] = ['label' => 'Failed synchronization', 'count' => $failedSync, 'severity' => 'red', 'description' => $failedSync . ' outbox event(s) failed delivery', 'link' => '#sync?status=failed'];
+                $alerts[] = ['label' => 'Failed synchronization', 'count' => $failedSync, 'severity' => 'red', 'description' => $failedSync.' outbox event(s) failed delivery', 'link' => '#sync?status=failed'];
             }
 
             if (empty($alerts)) {
@@ -225,7 +233,7 @@ class DashboardStatisticsService
     public function readingProgress(User $user, DashboardFilters $filters): array
     {
         $zones = $this->effectiveZoneIds($user, $filters);
-        $admin = $this->isAdmin($user);
+        $admin = $this->hasAuthorityWideAccess($user);
         $key = $filters->cacheKey('dash:reading', $zones);
 
         return $this->cached($key, function () use ($zones, $admin, $filters) {
@@ -233,19 +241,19 @@ class DashboardStatisticsService
                 ? BillingCycle::find($filters->billingCycleId)
                 : BillingCycle::where('status', '!=', 'closed')->orderByDesc('period_start')->first();
 
-            if (!$cycle) {
+            if (! $cycle) {
                 return ['cycle' => null, 'total' => 0, 'completed' => 0, 'submitted' => 0, 'rejected' => 0, 'remaining' => 0, 'pct' => 0];
             }
 
             $totalExpected = MeterInstallation::query()
                 ->where('is_active', true)
                 ->where('installation_date', '<=', $cycle->period_end)
-                ->when(!$admin || count($zones) > 0, fn ($q) => $q->whereHas('waterAccount', fn ($sq) => $sq->whereIn('zone_id', $zones)))
+                ->when(! $admin || count($zones) > 0, fn ($q) => $q->whereHas('waterAccount', fn ($sq) => $sq->whereIn('zone_id', $zones)))
                 ->count();
 
             $readings = MeterReading::query()
                 ->where('billing_cycle_id', $cycle->id)
-                ->when(!$admin || count($zones) > 0, fn ($q) => $q->whereHas('installation.waterAccount', fn ($sq) => $sq->whereIn('zone_id', $zones)))
+                ->when(! $admin || count($zones) > 0, fn ($q) => $q->whereHas('installation.waterAccount', fn ($sq) => $sq->whereIn('zone_id', $zones)))
                 ->selectRaw("
                     COUNT(*) as total_readings,
                     SUM(CASE WHEN reading_status IN ('verified','billed') THEN 1 ELSE 0 END) as completed,
@@ -276,7 +284,7 @@ class DashboardStatisticsService
     public function billingCollections(User $user, DashboardFilters $filters): array
     {
         $zones = $this->effectiveZoneIds($user, $filters);
-        $admin = $this->isAdmin($user);
+        $admin = $this->hasAuthorityWideAccess($user);
         $key = $filters->cacheKey('dash:billcol', $zones);
 
         return $this->cached($key, function () use ($zones, $admin) {
@@ -289,7 +297,7 @@ class DashboardStatisticsService
                 ->whereNotIn('status', ['draft', 'voided', 'cancelled'])
                 ->whereNotNull('issued_at')
                 ->where('issued_at', '>=', $months->first())
-                ->when(!$admin || count($zones) > 0, fn ($q) => $q->whereHas('account', fn ($sq) => $sq->whereIn('zone_id', $zones)))
+                ->when(! $admin || count($zones) > 0, fn ($q) => $q->whereHas('account', fn ($sq) => $sq->whereIn('zone_id', $zones)))
                 ->selectRaw("DATE_FORMAT(issued_at, '%Y-%m') as month, SUM(total_amount) as total")
                 ->groupBy('month')
                 ->pluck('total', 'month');
@@ -298,7 +306,7 @@ class DashboardStatisticsService
                 ->where('status', 'confirmed')
                 ->whereNotNull('confirmed_at')
                 ->where('confirmed_at', '>=', $months->first())
-                ->when(!$admin || count($zones) > 0, fn ($q) => $q->whereHas('account', fn ($sq) => $sq->whereIn('zone_id', $zones)))
+                ->when(! $admin || count($zones) > 0, fn ($q) => $q->whereHas('account', fn ($sq) => $sq->whereIn('zone_id', $zones)))
                 ->selectRaw("DATE_FORMAT(confirmed_at, '%Y-%m') as month, SUM(amount) as total")
                 ->groupBy('month')
                 ->pluck('total', 'month');
@@ -307,6 +315,7 @@ class DashboardStatisticsService
                 $key = $m->format('Y-m');
                 $b = (float) ($billed[$key] ?? 0);
                 $c = (float) ($collected[$key] ?? 0);
+
                 return [
                     'label' => $m->format('M Y'),
                     'billed' => $b,
@@ -322,11 +331,11 @@ class DashboardStatisticsService
     public function recentPayments(User $user, DashboardFilters $filters, int $limit = 8): Collection
     {
         $zones = $this->effectiveZoneIds($user, $filters);
-        $admin = $this->isAdmin($user);
+        $admin = $this->hasAuthorityWideAccess($user);
 
         return Payment::query()
             ->with(['account:id,ip_number,customer_id,zone_id', 'account.customer:id,first_name,last_name,business_name,customer_type'])
-            ->when(!$admin || count($zones) > 0, fn ($q) => $q->whereHas('account', fn ($sq) => $sq->whereIn('zone_id', $zones)))
+            ->when(! $admin || count($zones) > 0, fn ($q) => $q->whereHas('account', fn ($sq) => $sq->whereIn('zone_id', $zones)))
             ->orderByDesc('payment_date')
             ->limit($limit)
             ->get();
@@ -355,6 +364,7 @@ class DashboardStatisticsService
         if ($cycleId) {
             return BillingCycle::find($cycleId);
         }
+
         return BillingCycle::where('status', '!=', 'closed')->orderByDesc('period_start')->first();
     }
 
@@ -390,7 +400,7 @@ class DashboardStatisticsService
             ['group' => 'Administration', 'items' => [
                 ['label' => 'Staff', 'route' => 'staff.index', 'permission' => 'staff-users.view', 'icon' => 'shield'],
                 ['label' => 'Roles', 'route' => 'roles.index', 'permission' => 'roles.view', 'icon' => 'key'],
-                ['label' => 'Zones', 'route' => '#zones', 'permission' => 'zones.view', 'icon' => 'map-pin'],
+                ['label' => 'Zones', 'route' => 'zones.index', 'permission' => 'zones.view', 'icon' => 'map-pin'],
                 ['label' => 'Billing Settings', 'route' => '#billing-settings', 'permission' => 'billing-settings.manage', 'icon' => 'settings'],
                 ['label' => 'Audit Logs', 'route' => '#audit-logs', 'permission' => 'audit-logs.view', 'icon' => 'scroll'],
             ]],
@@ -402,6 +412,7 @@ class DashboardStatisticsService
 
         return array_values(array_filter(array_map(function ($group) use ($user) {
             $items = array_values(array_filter($group['items'], fn ($i) => $user->can($i['permission'])));
+
             return $items === [] ? null : ['group' => $group['group'], 'items' => $items];
         }, $groups)));
     }

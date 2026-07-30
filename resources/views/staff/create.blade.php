@@ -62,15 +62,31 @@
                     </div>
 
                     <div class="form-grid">
-                        <label>
-                            Zone
-                            <select name="zone_id">
+                        <label style="grid-column: span 2;">
+                            Primary Zone
+                            <select name="primary_zone_id">
                                 <option value="">— No Zone (Head Office) —</option>
                                 @foreach($zones as $zone)
-                                    <option value="{{ $zone->id }}" @selected(old('zone_id') == $zone->id)>{{ $zone->name }} ({{ $zone->code }})</option>
+                                    <option value="{{ $zone['id'] }}" @selected(old('primary_zone_id') == $zone['id'])>{{ $zone['name'] }} ({{ $zone['type'] }})</option>
                                 @endforeach
                             </select>
+                            <small>Used for reporting defaults and legacy integrations.</small>
                         </label>
+                    </div>
+
+                    <fieldset class="permission-fieldset">
+                        <legend>Assigned Zones</legend>
+                        <div class="checkbox-grid">
+                            @foreach($zones as $zone)
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="zone_ids[]" value="{{ $zone['id'] }}" @checked(is_array(old('zone_ids')) && in_array($zone['id'], old('zone_ids')))>
+                                    <span>{{ $zone['name'] }} <small>({{ $zone['type'] }})</small></span>
+                                </label>
+                            @endforeach
+                        </div>
+                    </fieldset>
+
+                    <div class="form-grid">
                         <label>
                             Status
                             <select name="is_active">

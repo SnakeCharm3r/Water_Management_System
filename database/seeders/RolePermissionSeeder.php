@@ -20,7 +20,9 @@ class RolePermissionSeeder extends Seeder
         $permissions = [
             'admin-panel.access', 'dashboard.view',
             'staff-users.view', 'staff-users.create', 'staff-users.update', 'staff-users.manage',
-            'roles.view', 'roles.manage', 'zones.view', 'zones.manage',
+            'roles.view', 'roles.manage',
+            'zones.view', 'zones.view-all', 'zones.manage', 'zones.create', 'zones.update', 'zones.deactivate',
+            'zones.assign-users', 'zones.reassign-records',
             'customers.view', 'customers.create', 'customers.update',
             'water-accounts.view', 'water-accounts.create', 'water-accounts.update',
             'meters.view', 'meters.create', 'meters.update', 'meters.install', 'meters.replace',

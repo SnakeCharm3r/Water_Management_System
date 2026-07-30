@@ -7,6 +7,8 @@
     <title>{{ $title ?? config('app.name') }}</title>
     <link rel="stylesheet" href="{{ asset('css/portal.css') }}">
     <script src="{{ asset('js/portal.js') }}" defer></script>
+    @stack('styles')
+    @stack('scripts')
 </head>
 <body>
     {{ $slot }}

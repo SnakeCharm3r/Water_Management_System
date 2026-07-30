@@ -46,6 +46,14 @@
                             <option value="inactive" @selected(request('status') === 'inactive')>Inactive</option>
                         </select>
                     </div>
+                    <div class="filter-bar__field">
+                        <select name="zone">
+                            <option value="">All Zones</option>
+                            @foreach($zones as $z)
+                                <option value="{{ $z['id'] }}" @selected(request('zone') == $z['id'])>{{ $z['name'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
                 <div class="filter-bar__actions">
                     <button type="submit" class="button primary button--sm">Filter</button>
@@ -62,7 +70,7 @@
                             <th>Username</th>
                             <th>Email</th>
                             <th>Role(s)</th>
-                            <th>Zone</th>
+                            <th>Zones</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -78,7 +86,13 @@
                                         <span class="badge badge--info">{{ $role->name }}</span>
                                     @endforeach
                                 </td>
-                                <td>{{ $user->zone?->name ?? '—' }}</td>
+                                <td>
+                                    @forelse($user->zones as $z)
+                                        <span class="badge {{ $z->pivot->is_primary ? 'badge--amber' : 'badge--muted' }}">{{ $z->name }}</span>
+                                    @empty
+                                        —
+                                    @endforelse
+                                </td>
                                 <td>
                                     <span class="badge badge--{{ $user->is_active ? 'confirmed' : 'reversed' }}">
                                         {{ $user->is_active ? 'Active' : 'Inactive' }}
@@ -99,7 +113,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="7" class="empty-cell">No staff users found.</td></tr>
+                            <tr><td colspan="8" class="empty-cell">No staff users found.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

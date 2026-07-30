@@ -14,7 +14,18 @@ class TariffCategory extends Model
 
     protected $guarded = [];
 
-    protected function casts(): array { return ['is_active' => 'boolean']; }
-    public function waterAccounts(): HasMany { return $this->hasMany(WaterAccount::class); }
-    public function rates(): HasMany { return $this->hasMany(TariffRate::class); }
+    protected function casts(): array
+    {
+        return ['is_active' => 'boolean'];
+    }
+
+    public function waterAccounts(): HasMany
+    {
+        return $this->hasMany(WaterAccount::class);
+    }
+
+    public function rates(): HasMany
+    {
+        return $this->hasMany(TariffRate::class);
+    }
 }

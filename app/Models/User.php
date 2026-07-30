@@ -3,13 +3,14 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\Concerns\UsesPublicUuid;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Models\Concerns\UsesPublicUuid;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
@@ -75,5 +76,17 @@ class User extends Authenticatable
     public function zone(): BelongsTo
     {
         return $this->belongsTo(Zone::class);
+    }
+
+    public function zones(): BelongsToMany
+    {
+        return $this->belongsToMany(Zone::class, 'user_zone')
+            ->withPivot(['is_primary', 'assigned_by', 'assigned_at'])
+            ->withTimestamps();
+    }
+
+    public function primaryZone(): ?Zone
+    {
+        return $this->zones()->wherePivot('is_primary', true)->first();
     }
 }

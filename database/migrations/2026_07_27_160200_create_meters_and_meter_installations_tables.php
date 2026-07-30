@@ -60,8 +60,8 @@ return new class extends Migration
 
         if (Schema::getConnection()->getDriverName() === 'mysql') {
             Schema::table('meter_installations', function (Blueprint $table) {
-                $table->string('active_account_key', 64)->storedAs("IF(`is_active` = 1 AND `deleted_at` IS NULL, CAST(`water_account_id` AS CHAR), NULL)");
-                $table->string('active_meter_key', 64)->storedAs("IF(`is_active` = 1 AND `deleted_at` IS NULL, CAST(`meter_id` AS CHAR), NULL)");
+                $table->string('active_account_key', 64)->storedAs('IF(`is_active` = 1 AND `deleted_at` IS NULL, CAST(`water_account_id` AS CHAR), NULL)');
+                $table->string('active_meter_key', 64)->storedAs('IF(`is_active` = 1 AND `deleted_at` IS NULL, CAST(`meter_id` AS CHAR), NULL)');
                 $table->unique('active_account_key', 'meter_installations_one_active_account');
                 $table->unique('active_meter_key', 'meter_installations_one_active_meter');
             });

@@ -336,6 +336,34 @@ nav[role="navigation"] span[aria-disabled="true"] { opacity: .4; }
 .permission-tags { display: flex; flex-wrap: wrap; gap: .3rem; max-width: 500px; }
 .badge--muted { background: var(--canvas); color: var(--muted); border: 1px solid var(--line);
   font-size: .72rem; padding: .15rem .4rem; border-radius: 4px; }
+.badge--amber { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber);
+  font-size: .72rem; padding: .15rem .4rem; border-radius: 4px; }
+
+/* ── Detail list (zone show) ─────────────────────────── */
+.detail-list { display: grid; grid-template-columns: 140px 1fr; gap: .5rem 1.25rem; margin: 0; }
+.detail-list dt { color: var(--muted); font-size: .82rem; font-weight: 600; }
+.detail-list dd { margin: 0; font-weight: 500; }
+
+/* ── Plain list (zone show) ────────────────────────────── */
+.plain-list { list-style: none; padding: 0; margin: 0; }
+.plain-list li { padding: .4rem 0; border-bottom: 1px solid var(--line); }
+.plain-list li:last-child { border-bottom: 0; }
+
+/* ── Section title ───────────────────────────────────── */
+.section-title { font-size: 1rem; margin: 0 0 1rem; padding-bottom: .5rem; border-bottom: 1px solid var(--line); }
+
+/* ── Office cards (zone show) ──────────────────────────── */
+.office-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 1.25rem; }
+.office-card { border: 1px solid var(--line); border-radius: 8px; padding: 1rem; background: #fff; }
+.office-card__header { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin-bottom: .75rem; }
+.office-card__header h3 { margin: 0; font-size: 1rem; flex: 1; }
+.office-card__details { display: grid; grid-template-columns: 100px 1fr; gap: .35rem .75rem; margin: 0 0 1rem; font-size: .86rem; }
+.office-card__details dt { color: var(--muted); font-weight: 600; }
+.office-card__details dd { margin: 0; }
+
+/* ── Map panel ───────────────────────────────────────── */
+.map-panel { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.map-container { height: 320px; width: 100%; min-height: 220px; background: var(--canvas); }
 
 /* ── Focus / accessibility ─────────────────────────────── */
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }

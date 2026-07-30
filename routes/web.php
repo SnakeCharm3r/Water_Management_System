@@ -7,6 +7,8 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\StaffUserController;
+use App\Http\Controllers\ZoneController;
+use App\Http\Controllers\ZoneOfficeController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard')->name('home');
@@ -44,5 +46,19 @@ Route::middleware(['auth', 'active.staff'])->group(function (): void {
         Route::get('roles/{role}/edit', [RoleController::class, 'edit'])->name('roles.edit')->middleware('permission:roles.manage');
         Route::put('roles/{role}', [RoleController::class, 'update'])->name('roles.update')->middleware('permission:roles.manage');
         Route::delete('roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy')->middleware('permission:roles.manage');
+    });
+
+    // Zone management
+    Route::middleware('permission:zones.view')->group(function (): void {
+        Route::get('zones', [ZoneController::class, 'index'])->name('zones.index');
+        Route::get('zones/create', [ZoneController::class, 'create'])->name('zones.create')->middleware('permission:zones.create');
+        Route::post('zones', [ZoneController::class, 'store'])->name('zones.store')->middleware('permission:zones.create');
+        Route::get('zones/{zone}', [ZoneController::class, 'show'])->name('zones.show');
+        Route::get('zones/{zone}/edit', [ZoneController::class, 'edit'])->name('zones.edit')->middleware('permission:zones.update');
+        Route::put('zones/{zone}', [ZoneController::class, 'update'])->name('zones.update')->middleware('permission:zones.update');
+        Route::patch('zones/{zone}/toggle-status', [ZoneController::class, 'toggleStatus'])->name('zones.toggle-status')->middleware('permission:zones.deactivate');
+        Route::get('zones/{zone}/assign-staff', [ZoneController::class, 'assignStaff'])->name('zones.assign-staff')->middleware('permission:zones.assign-users');
+        Route::post('zones/{zone}/assign-staff', [ZoneController::class, 'updateStaff'])->name('zones.assign-staff.update')->middleware('permission:zones.assign-users');
+        Route::get('zones/{zone}/offices/{office}', [ZoneOfficeController::class, 'show'])->name('zones.offices.show');
     });
 });

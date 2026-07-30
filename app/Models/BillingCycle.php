@@ -17,6 +17,13 @@ class BillingCycle extends Model
         return ['period_start' => 'date', 'period_end' => 'date', 'reading_start_date' => 'date', 'reading_end_date' => 'date', 'issue_date' => 'date', 'due_date' => 'date', 'generated_at' => 'datetime', 'closed_at' => 'datetime'];
     }
 
-    public function readings(): HasMany { return $this->hasMany(MeterReading::class); }
-    public function bills(): HasMany { return $this->hasMany(Bill::class); }
+    public function readings(): HasMany
+    {
+        return $this->hasMany(MeterReading::class);
+    }
+
+    public function bills(): HasMany
+    {
+        return $this->hasMany(Bill::class);
+    }
 }

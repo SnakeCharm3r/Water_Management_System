@@ -23,7 +23,7 @@
             @endif
             @if(session('error'))
                 <div class="alert" style="background:var(--red-bg);color:var(--red);">{{ session('error') }}</div>
-            @endif
+            @endif 
 
             <div class="table-container">
                 <table class="data-table">

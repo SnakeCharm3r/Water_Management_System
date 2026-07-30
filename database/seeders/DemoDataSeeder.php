@@ -4,9 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\AccountLedgerEntry;
 use App\Models\Bill;
-use App\Models\BillAdjustment;
 use App\Models\BillingCycle;
-use App\Models\BillItem;
 use App\Models\Customer;
 use App\Models\Meter;
 use App\Models\MeterInstallation;
@@ -19,9 +17,10 @@ use App\Models\TariffRate;
 use App\Models\User;
 use App\Models\WaterAccount;
 use App\Models\Zone;
+use App\Models\ZoneOffice;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class DemoDataSeeder extends Seeder
 {
@@ -45,30 +44,148 @@ class DemoDataSeeder extends Seeder
         $admin = User::where('username', 'admin')->first();
         if ($admin) {
             $admin->update(['zone_id' => $hq->id]);
+            $admin->zones()->sync([
+                $hq->id => ['is_primary' => true, 'assigned_by' => $admin->id, 'assigned_at' => now()],
+            ]);
         }
 
         $staffData = [
-            ['fname' => 'Juma',    'mname' => 'H.',   'lname' => 'Mwinyigoha', 'username' => 'juma.rm',     'email' => 'juma@dawasa.local',     'zone_id' => $kinondoni->id, 'role' => 'regional-manager'],
-            ['fname' => 'Fatma',   'mname' => 'A.',   'lname' => 'Kibwana',    'username' => 'fatma.lm',    'email' => 'fatma@dawasa.local',    'zone_id' => $kinZ1->id,     'role' => 'line-manager'],
-            ['fname' => 'Baraka',  'mname' => '',     'lname' => 'Mfaume',     'username' => 'baraka.cs',   'email' => 'baraka@dawasa.local',   'zone_id' => $ilaZ1->id,     'role' => 'customer-service'],
-            ['fname' => 'Asha',    'mname' => 'M.',   'lname' => 'Mzee',       'username' => 'asha.ms',     'email' => 'asha@dawasa.local',     'zone_id' => $kinZ1->id,     'role' => 'meter-supervisor'],
-            ['fname' => 'Hamisi',  'mname' => '',     'lname' => 'Dachi',      'username' => 'hamisi.mr',   'email' => 'hamisi@dawasa.local',   'zone_id' => $kinZ1->id,     'role' => 'meter-reader'],
-            ['fname' => 'Grace',   'mname' => 'P.',   'lname' => 'Mbuguni',    'username' => 'grace.mr2',   'email' => 'grace@dawasa.local',    'zone_id' => $ilaZ1->id,     'role' => 'meter-reader'],
-            ['fname' => 'Omari',   'mname' => '',     'lname' => 'Kondo',      'username' => 'omari.tech',  'email' => 'omari@dawasa.local',    'zone_id' => $temZ1->id,     'role' => 'technician'],
-            ['fname' => 'Neema',   'mname' => 'J.',   'lname' => 'Tarimo',     'username' => 'neema.bo',    'email' => 'neema@dawasa.local',    'zone_id' => $hq->id,        'role' => 'billing-officer'],
-            ['fname' => 'Daniel',  'mname' => 'R.',   'lname' => 'Mushi',      'username' => 'daniel.aud',  'email' => 'daniel@dawasa.local',   'zone_id' => $hq->id,        'role' => 'auditor'],
-            ['fname' => 'Rehema',  'mname' => '',     'lname' => 'Sanga',      'username' => 'rehema.sa',   'email' => 'rehema@dawasa.local',   'zone_id' => $hq->id,        'role' => 'system-admin'],
+            ['fname' => 'Juma',    'mname' => 'H.',   'lname' => 'Mwinyigoha', 'username' => 'juma.rm',     'email' => 'juma@dawasa.local',     'zone_id' => $kinondoni->id, 'zones' => [$kinondoni->id], 'role' => 'regional-manager'],
+            ['fname' => 'Fatma',   'mname' => 'A.',   'lname' => 'Kibwana',    'username' => 'fatma.lm',    'email' => 'fatma@dawasa.local',    'zone_id' => $kinZ1->id,     'zones' => [$kinZ1->id], 'role' => 'line-manager'],
+            ['fname' => 'Baraka',  'mname' => '',     'lname' => 'Mfaume',     'username' => 'baraka.cs',   'email' => 'baraka@dawasa.local',   'zone_id' => $ilaZ1->id,     'zones' => [$ilaZ1->id], 'role' => 'customer-service'],
+            ['fname' => 'Asha',    'mname' => 'M.',   'lname' => 'Mzee',       'username' => 'asha.ms',     'email' => 'asha@dawasa.local',     'zone_id' => $kinZ1->id,     'zones' => [$kinZ1->id], 'role' => 'meter-supervisor'],
+            ['fname' => 'Hamisi',  'mname' => '',     'lname' => 'Dachi',      'username' => 'hamisi.mr',   'email' => 'hamisi@dawasa.local',   'zone_id' => $kinZ1->id,     'zones' => [$kinZ1->id], 'role' => 'meter-reader'],
+            ['fname' => 'Grace',   'mname' => 'P.',   'lname' => 'Mbuguni',    'username' => 'grace.mr2',   'email' => 'grace@dawasa.local',    'zone_id' => $ilaZ1->id,     'zones' => [$ilaZ1->id], 'role' => 'meter-reader'],
+            ['fname' => 'Omari',   'mname' => '',     'lname' => 'Kondo',      'username' => 'omari.tech',  'email' => 'omari@dawasa.local',    'zone_id' => $temZ1->id,     'zones' => [$temZ1->id], 'role' => 'technician'],
+            ['fname' => 'Neema',   'mname' => 'J.',   'lname' => 'Tarimo',     'username' => 'neema.bo',    'email' => 'neema@dawasa.local',    'zone_id' => $hq->id,        'zones' => [$hq->id], 'role' => 'billing-officer'],
+            ['fname' => 'Daniel',  'mname' => 'R.',   'lname' => 'Mushi',      'username' => 'daniel.aud',  'email' => 'daniel@dawasa.local',   'zone_id' => $hq->id,        'zones' => [$hq->id], 'role' => 'auditor'],
+            ['fname' => 'Rehema',  'mname' => '',     'lname' => 'Sanga',      'username' => 'rehema.sa',   'email' => 'rehema@dawasa.local',   'zone_id' => $hq->id,        'zones' => [$hq->id], 'role' => 'system-admin'],
         ];
 
         foreach ($staffData as $s) {
             $role = $s['role'];
-            unset($s['role']);
+            $zones = $s['zones'] ?? [];
+            $primary = $s['zone_id'];
+            unset($s['role'], $s['zones'], $s['zone_id']);
             $user = User::create(array_merge($s, [
+                'zone_id' => $primary,
                 'password' => $password,
                 'is_active' => true,
                 'email_verified_at' => now(),
             ]));
             $user->assignRole($role);
+
+            $sync = [];
+            foreach ($zones as $zoneId) {
+                $sync[$zoneId] = ['is_primary' => $zoneId === $primary, 'assigned_by' => $admin?->id, 'assigned_at' => now()];
+            }
+            $user->zones()->sync($sync);
+        }
+
+        // ── 2b. Zone offices (DAWASA offices in Dar es Salaam) ──
+        $managerLookup = [
+            'HQ' => User::where('username', 'rehema.sa')->value('id'),
+            'KIN' => User::where('username', 'juma.rm')->value('id'),
+            'KIN-A' => User::where('username', 'fatma.lm')->value('id'),
+            'ILA-A' => User::where('username', 'baraka.cs')->value('id'),
+            'TEM-A' => User::where('username', 'omari.tech')->value('id'),
+        ];
+
+        $officeData = [
+            [
+                'zone_id' => $hq->id,
+                'name' => 'DAWASA Head Office',
+                'office_type' => 'head_office',
+                'address' => 'DAWASA Building, Morogoro Road, Ubungo, Dar es Salaam',
+                'phone' => '+255 22 245 0511',
+                'email' => 'info@dawasa.go.tz',
+                'latitude' => -6.7924,
+                'longitude' => 39.2083,
+                'easting' => 523_017.00,
+                'northing' => 9_249_112.00,
+                'utm_zone' => '37M',
+                'opening_time' => '08:00',
+                'closing_time' => '16:30',
+                'opening_days' => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+                'is_main_office' => true,
+                'manager_user_id' => $managerLookup['HQ'],
+            ],
+            [
+                'zone_id' => $kinondoni->id,
+                'name' => 'Kinondoni Regional Office',
+                'office_type' => 'regional_office',
+                'address' => 'Kinondoni Municipal Offices Area, Dar es Salaam',
+                'phone' => '+255 22 270 0000',
+                'email' => 'kinondoni@dawasa.go.tz',
+                'latitude' => -6.7833,
+                'longitude' => 39.2667,
+                'easting' => 529_412.00,
+                'northing' => 9_250_102.00,
+                'utm_zone' => '37M',
+                'opening_time' => '08:00',
+                'closing_time' => '15:30',
+                'opening_days' => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+                'is_main_office' => true,
+                'manager_user_id' => $managerLookup['KIN'],
+            ],
+            [
+                'zone_id' => $kinZ1->id,
+                'name' => 'Kinondoni Zone A Customer Care Centre',
+                'office_type' => 'customer_care',
+                'address' => 'Kijitonyama, Kinondoni Zone A, Dar es Salaam',
+                'phone' => '+255 22 277 1234',
+                'email' => 'kinondoni.a@dawasa.go.tz',
+                'latitude' => -6.7654,
+                'longitude' => 39.2412,
+                'easting' => 526_603.00,
+                'northing' => 9_252_094.00,
+                'utm_zone' => '37M',
+                'opening_time' => '08:00',
+                'closing_time' => '15:30',
+                'opening_days' => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+                'is_main_office' => true,
+                'manager_user_id' => $managerLookup['KIN-A'],
+            ],
+            [
+                'zone_id' => $ilaZ1->id,
+                'name' => 'Ilala Zone A Customer Care Centre',
+                'office_type' => 'customer_care',
+                'address' => 'Ilala, Dar es Salaam',
+                'phone' => '+255 22 212 3456',
+                'email' => 'ilala.a@dawasa.go.tz',
+                'latitude' => -6.8245,
+                'longitude' => 39.2695,
+                'easting' => 529_742.00,
+                'northing' => 9_245_537.00,
+                'utm_zone' => '37M',
+                'opening_time' => '08:00',
+                'closing_time' => '15:30',
+                'opening_days' => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+                'is_main_office' => true,
+                'manager_user_id' => $managerLookup['ILA-A'],
+            ],
+            [
+                'zone_id' => $temZ1->id,
+                'name' => 'Temeke Zone A Customer Care Centre',
+                'office_type' => 'customer_care',
+                'address' => 'Temeke, Dar es Salaam',
+                'phone' => '+255 22 285 6789',
+                'email' => 'temeke.a@dawasa.go.tz',
+                'latitude' => -6.8641,
+                'longitude' => 39.2524,
+                'easting' => 527_835.00,
+                'northing' => 9_241_157.00,
+                'utm_zone' => '37M',
+                'opening_time' => '08:00',
+                'closing_time' => '15:30',
+                'opening_days' => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+                'is_main_office' => true,
+                'manager_user_id' => $managerLookup['TEM-A'],
+            ],
+        ];
+
+        foreach ($officeData as $office) {
+            ZoneOffice::create($office);
         }
 
         // ── 3. Tariff categories ───────────────────────────
@@ -186,7 +303,7 @@ class DemoDataSeeder extends Seeder
             $status = $i === 0 ? 'reading' : 'closed';
 
             $cycle = BillingCycle::create([
-                'cycle_code' => 'CYC-' . $start->format('Y-m'),
+                'cycle_code' => 'CYC-'.$start->format('Y-m'),
                 'name' => $start->format('F Y'),
                 'period_start' => $start->toDateString(),
                 'period_end' => $end->toDateString(),
@@ -209,7 +326,7 @@ class DemoDataSeeder extends Seeder
             // other meters
             [$inst2, [0, 15],  [15, 30],   [30, 48],   [48, 62],   [62, 80]],
             [$inst3, [0, 22],  [22, 45],   [45, 70],   [70, 95],   [95, 120]],
-            [$inst4, [0, 500], [500, 950], [950, 1400],[1400, 1850],[1850, 2300]],
+            [$inst4, [0, 500], [500, 950], [950, 1400], [1400, 1850], [1850, 2300]],
             [$inst5, [0, 10],  [10, 25],   [25, 38],   [38, 52],   [52, 65]],
         ];
 
@@ -219,7 +336,9 @@ class DemoDataSeeder extends Seeder
 
             for ($i = 5; $i >= 1; $i--) {
                 $pair = $seq[6 - $i] ?? null;
-                if (!$pair || !isset($months[$i])) continue;
+                if (! $pair || ! isset($months[$i])) {
+                    continue;
+                }
 
                 $cycle = $months[$i];
                 $prev = $pair[0];
@@ -284,7 +403,9 @@ class DemoDataSeeder extends Seeder
                     ->where('reading_status', 'verified')
                     ->get();
 
-                if ($readings->isEmpty()) continue;
+                if ($readings->isEmpty()) {
+                    continue;
+                }
 
                 $totalCharges = 0;
                 $billItems = [];
@@ -299,7 +420,7 @@ class DemoDataSeeder extends Seeder
                     $billItems[] = [
                         'meter_reading_id' => $reading->id,
                         'item_type' => 'consumption',
-                        'description' => 'Water consumption ' . number_format($reading->consumption, 1) . ' m³',
+                        'description' => 'Water consumption '.number_format($reading->consumption, 1).' m³',
                         'meter_number_snapshot' => $inst->meter->meter_number,
                         'category_snapshot' => $tariffLabel,
                         'reading_type_snapshot' => 'Actual',
@@ -325,7 +446,7 @@ class DemoDataSeeder extends Seeder
                 ];
 
                 $billStatus = $i >= 3 ? 'paid' : ($i === 2 ? 'partially_paid' : 'issued');
-                $amountPaid = match($billStatus) {
+                $amountPaid = match ($billStatus) {
                     'paid' => $totalCharges,
                     'partially_paid' => round($totalCharges * 0.6, 2),
                     default => 0,
@@ -334,8 +455,8 @@ class DemoDataSeeder extends Seeder
                 $bill = Bill::create([
                     'billing_cycle_id' => $cycle->id,
                     'water_account_id' => $acct->id,
-                    'invoice_number' => 'INV-' . str_pad($billNum, 6, '0', STR_PAD_LEFT),
-                    'bill_number' => 'BILL-' . str_pad($billNum, 6, '0', STR_PAD_LEFT),
+                    'invoice_number' => 'INV-'.str_pad($billNum, 6, '0', STR_PAD_LEFT),
+                    'bill_number' => 'BILL-'.str_pad($billNum, 6, '0', STR_PAD_LEFT),
                     'account_number_snapshot' => $acct->ip_number,
                     'customer_name_snapshot' => $custName,
                     'property_snapshot' => $acct->service_address,
@@ -366,11 +487,11 @@ class DemoDataSeeder extends Seeder
                     'entry_date' => $cycle->issue_date,
                     'entry_type' => 'bill',
                     'reference_number' => $bill->bill_number,
-                    'description' => 'Bill for ' . $cycle->name,
+                    'description' => 'Bill for '.$cycle->name,
                     'debit_amount' => $totalCharges,
                     'credit_amount' => 0,
                     'running_balance' => $totalCharges - $amountPaid,
-                    'idempotency_key' => 'bill-' . $bill->id,
+                    'idempotency_key' => 'bill-'.$bill->id,
                     'created_by' => $billingOfficer?->id,
                 ]);
 
@@ -408,12 +529,14 @@ class DemoDataSeeder extends Seeder
         $bills = Bill::whereIn('status', ['paid', 'partially_paid'])->get();
 
         foreach ($bills as $bill) {
-            if ($bill->amount_paid <= 0) continue;
+            if ($bill->amount_paid <= 0) {
+                continue;
+            }
 
             $channel = $channels[array_rand($channels)];
             $payment = Payment::create([
                 'water_account_id' => $bill->water_account_id,
-                'receipt_number' => 'REC-' . str_pad($paymentNum, 6, '0', STR_PAD_LEFT),
+                'receipt_number' => 'REC-'.str_pad($paymentNum, 6, '0', STR_PAD_LEFT),
                 'payment_date' => $bill->due_date ?? now(),
                 'amount' => $bill->amount_paid,
                 'payment_method' => str_contains($channel, 'pesa') ? 'mobile_money' : ($channel === 'bank_transfer' ? 'bank_transfer' : 'cash'),
@@ -436,11 +559,11 @@ class DemoDataSeeder extends Seeder
                 'entry_date' => $bill->due_date ?? now(),
                 'entry_type' => 'payment',
                 'reference_number' => $payment->receipt_number,
-                'description' => 'Payment via ' . $channel,
+                'description' => 'Payment via '.$channel,
                 'debit_amount' => 0,
                 'credit_amount' => $bill->amount_paid,
                 'running_balance' => $bill->balance_due,
-                'idempotency_key' => 'pay-' . $payment->id,
+                'idempotency_key' => 'pay-'.$payment->id,
             ]);
 
             $paymentNum++;
@@ -496,13 +619,13 @@ class DemoDataSeeder extends Seeder
         }
 
         // ── 11. Integration outbox — a failed sync event ───
-        \Illuminate\Support\Facades\DB::table('integration_outbox')->insert([
+        DB::table('integration_outbox')->insert([
             'aggregate_type' => 'customer',
             'aggregate_id' => $cust1->id,
             'aggregate_uuid' => $cust1->public_uuid,
             'operation' => 'create',
             'payload' => json_encode(['id' => $cust1->id, 'name' => $cust1->display_name]),
-            'idempotency_key' => 'demo-sync-fail-' . $cust1->id,
+            'idempotency_key' => 'demo-sync-fail-'.$cust1->id,
             'status' => 'failed',
             'attempts' => 3,
             'last_error' => 'Connection timeout to Supabase',
@@ -514,7 +637,7 @@ class DemoDataSeeder extends Seeder
         $this->command->newLine();
         $this->command->table(
             ['Username', 'Name', 'Role', 'Zone', 'Password'],
-            collect($staffData)->map(fn ($s) => [$s['username'], trim($s['fname'] . ' ' . $s['lname']), '-', '-', '123.test'])->toArray()
+            collect($staffData)->map(fn ($s) => [$s['username'], trim($s['fname'].' '.$s['lname']), '-', '-', '123.test'])->toArray()
         );
         $this->command->info('Admin: admin / 123.test');
     }

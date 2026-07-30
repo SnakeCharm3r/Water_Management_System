@@ -5,10 +5,6 @@ namespace Tests\Feature;
 use App\Models\Bill;
 use App\Models\BillingCycle;
 use App\Models\Customer;
-use App\Models\Meter;
-use App\Models\MeterInstallation;
-use App\Models\MeterReading;
-use App\Models\Payment;
 use App\Models\TariffCategory;
 use App\Models\User;
 use App\Models\WaterAccount;
@@ -55,6 +51,7 @@ class DashboardTest extends TestCase
     {
         $user = User::factory()->create(['is_active' => true, 'zone_id' => $zone?->id]);
         $user->assignRole('super-admin');
+
         return $user;
     }
 
@@ -62,6 +59,7 @@ class DashboardTest extends TestCase
     {
         $user = User::factory()->create(['is_active' => true, 'zone_id' => $zone->id]);
         $user->assignRole($role);
+
         return $user;
     }
 
